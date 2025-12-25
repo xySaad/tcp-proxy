@@ -2,7 +2,7 @@ package model
 
 var (
 	PEER_REQUEST    = []byte("==PEER==REQUEST")
-	PEER_ACCEPTED   = []byte("==PEER==ACCEPTED==")
+	PEER_ACCEPTED   = []byte("==PEER==ACCEPTED")
 	START_BRIDGE    = []byte("==START==BRIDGE")
 	BRIDGE_REJECTED = []byte("==BRIDGE==REJECTED")
 	BRIDGE_ACCEPTED = []byte("==BRIDGE==ACCEPTED")

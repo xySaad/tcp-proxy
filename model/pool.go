@@ -36,14 +36,17 @@ func (p *Pool[T]) Pop() {
 	p.value = p.value[:len(p.value)-1]
 }
 
-func (p *Pool[T]) Find(callback func(T) bool) *T {
+func (p *Pool[T]) Find(callback func(*T) bool) *T {
 	p.Lock()
 	defer p.Unlock()
-	i := slices.IndexFunc(p.value, callback)
-	if i < 0 {
-		return nil
+
+	for _, v := range p.value {
+		if callback(&v) {
+			return &v
+		}
 	}
-	return &p.value[i]
+
+	return nil
 }
 
 func (p *Pool[T]) ForEach(callback func(T)) {
@@ -53,4 +56,24 @@ func (p *Pool[T]) ForEach(callback func(T)) {
 	for _, v := range p.value {
 		callback(v)
 	}
+}
+
+func (p *Pool[T]) RemoveBy(predicate func(*T) bool) {
+	p.Lock()
+	defer p.Unlock()
+
+	for i, v := range p.value {
+		if predicate(&v) {
+			p.value = slices.Delete(p.value, i, i+1)
+			return
+		}
+	}
+
+}
+
+func (p *Pool[T]) Clear() {
+	p.Lock()
+	defer p.Unlock()
+
+	p.value = nil
 }

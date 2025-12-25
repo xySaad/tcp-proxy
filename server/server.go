@@ -2,8 +2,6 @@ package server
 
 import (
 	"01proxy/model"
-	"bytes"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -47,14 +45,15 @@ func (s *Server) handleClient(client Client) {
 		return
 	}
 
-	peer.Conn.Write(model.START_BRIDGE)
-	buffer := make([]byte, len(model.BRIDGE_ACCEPTED))
-	_, err := io.ReadFull(peer.Conn, buffer)
-	if err != nil || !bytes.Equal(buffer, model.BRIDGE_ACCEPTED) {
-		log.Println(err, "BRIDGE_REJECTED - ", string(buffer))
+	err := peer.StartBridge()
+	if err != nil {
+		log.Println(err)
+		s.pool.Peers.RemoveBy(func(p *Peer) bool {
+			return p.Conn == peer.Conn
+		})
+		s.handleClient(client)
 		return
 	}
-
 	tunnel := <-s.pool.Tunnels
 	log.Println("copy tunnel and client")
 	tunnel.Write(client.buffer)
@@ -74,7 +73,8 @@ func (s *Server) Run() {
 		case Peer:
 			s.pool.Peers.Add(Peer{Quota: 0, Conn: conn.Conn})
 			log.Println("Peer added", conn.Conn.RemoteAddr(), "- Total:", s.pool.Peers.Size())
-			go s.pool.Clients.ForEach(s.handleClient)
+			s.pool.Clients.ForEach(s.handleClient)
+			s.pool.Clients.Clear()
 		case net.Conn:
 			s.pool.Tunnels <- conn
 			log.Println("Tunnel added", conn.RemoteAddr())
