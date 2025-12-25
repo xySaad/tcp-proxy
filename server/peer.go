@@ -6,8 +6,9 @@ import (
 )
 
 type Peer struct {
-	Quota int
-	Conn  net.Conn
+	Quota   int
+	Conn    net.Conn
+	Tunnels map[string]net.Conn
 }
 
 func (p *Pool) NextPeer() (peer *Peer) {

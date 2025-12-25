@@ -46,11 +46,11 @@ func (p *Pool[T]) Find(callback func(T) bool) *T {
 	return &p.value[i]
 }
 
-func (p *Pool[T]) ForEach(callback func(*T)) {
+func (p *Pool[T]) ForEach(callback func(T)) {
 	p.Lock()
 	defer p.Unlock()
 
 	for _, v := range p.value {
-		callback(&v)
+		callback(v)
 	}
 }

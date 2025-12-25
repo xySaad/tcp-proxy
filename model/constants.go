@@ -1,11 +1,15 @@
 package model
 
 var (
-	PEER_REQUEST    = []byte("==PEER==")
+	PEER_REQUEST    = []byte("==PEER==REQUEST")
 	PEER_ACCEPTED   = []byte("==PEER==ACCEPTED==")
 	START_BRIDGE    = []byte("==START==BRIDGE")
 	BRIDGE_REJECTED = []byte("==BRIDGE==REJECTED")
 	BRIDGE_ACCEPTED = []byte("==BRIDGE==ACCEPTED")
+
+	TUNNEL_REQUEST  = []byte("==TUNNEL==REQUEST")
+	TUNNEL_ACCEPTED = []byte("==TUNNEL==ACCEPTED")
+	TUNNEL_REJECTED = []byte("==TUNNEL==REJECTED")
 )
 
 const (
