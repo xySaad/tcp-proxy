@@ -1,6 +1,7 @@
 package main
 
 import (
+	"01proxy/client"
 	"01proxy/server"
 	"fmt"
 	"os"
@@ -20,6 +21,6 @@ func main() {
 		fmt.Println("Listening", adress)
 		srv.Run()
 	} else {
-		Client(Proxy())
+		client.Client(client.Proxy())
 	}
 }
