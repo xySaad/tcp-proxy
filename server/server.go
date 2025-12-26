@@ -2,15 +2,17 @@ package server
 
 import (
 	"01proxy/model"
+	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 )
 
 type Pool struct {
-	Clients model.Pool[Client]
-	Peers   model.Pool[Peer]
-	Tunnels chan net.Conn
+	Clients   model.Pool[Client]
+	Peers     model.Pool[*Peer]
+	TunnelMap model.Map[uint64, chan net.Conn]
 }
 
 type Server struct {
@@ -29,59 +31,70 @@ func New(adress string) (*Server, error) {
 	}
 
 	return &Server{
-		pool: Pool{
-			Tunnels: make(chan net.Conn),
-		},
-		ln: ln,
+		pool: Pool{TunnelMap: model.NewTunnelMap[uint64, chan net.Conn]()},
+		ln:   ln,
 	}, nil
 }
 
 func (s *Server) handleClient(client Client) {
 	peer := s.pool.NextPeer()
-	// queue the conn until a peer is available
 	if peer == nil {
 		s.pool.Clients.Add(client)
-		log.Println("Client queued", client.Conn.RemoteAddr(), "- Total:", s.pool.Clients.Size())
 		return
 	}
+	log.Println("using peer", peer.Conn.RemoteAddr())
+	peer.Mx.Lock()
+	defer peer.Mx.Unlock()
 
-	err := peer.StartBridge()
-	if err != nil {
-		log.Println(err)
-		s.pool.Peers.RemoveBy(func(p *Peer) bool {
-			return p.Conn == peer.Conn
-		})
-		s.handleClient(client)
+	var id uint64 = uint64(rand.Int63())
+	ch := make(chan net.Conn)
+	s.pool.TunnelMap.Set(id, ch)
+	go func() {
+		tunnel := <-ch
+		if tunnel == nil {
+			log.Println("tunnel with id", id, "is null")
+			return
+		}
+		s.pool.TunnelMap.Delete(id)
+		fmt.Printf("writing buffer to client %s: %s\n", client.Conn.RemoteAddr(), string(client.buffer))
+		tunnel.Write(client.buffer)
+		client.buffer = nil
+		fmt.Printf("copying %s <=> %s\n", tunnel.RemoteAddr(), client.Conn.RemoteAddr())
+
+		err := model.BiCopy(tunnel, client.Conn)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Printf("Successfully Copied %s <=> %s\n", tunnel.RemoteAddr(), client.Conn.RemoteAddr())
+	}()
+
+	err := peer.StartBridge(id)
+	if err == nil {
 		return
 	}
-	tunnel := <-s.pool.Tunnels
-	log.Println("copy tunnel and client")
-	tunnel.Write(client.buffer)
-	model.BiCopy(tunnel, client.Conn)
-	log.Println("DONE: client-peer copy")
+	log.Println("Bridge rejected, Reason:", err)
+	log.Println("cleanup peer and tunnel", id, "...")
+	peer.Conn.Close()
+	s.pool.Peers.RemoveBy(func(p *Peer) bool {
+		return p.Conn == peer.Conn
+	})
+	ch <- nil
+	s.handleClient(client)
 }
 
 func (s *Server) Run() {
 	for {
 		conn, err := s.nextConn()
 		if err != nil {
-			log.Println(err)
 			continue
 		}
 
 		switch conn := conn.(type) {
 		case Peer:
-			s.pool.Peers.Add(Peer{Quota: 0, Conn: conn.Conn})
-			log.Println("Peer added", conn.Conn.RemoteAddr(), "- Total:", s.pool.Peers.Size())
-			go func() {
-				s.pool.Clients.Bulk(func() {
-					s.pool.Clients.ForEach(s.handleClient)
-					s.pool.Clients.Clear()
-				})
-			}()
-		case net.Conn:
-			s.pool.Tunnels <- conn
-			log.Println("Tunnel added", conn.RemoteAddr())
+			go s.handlePeer(&conn)
+		case Tunnel:
+			go s.handleTunnel(conn)
 		case Client:
 			go s.handleClient(conn)
 		}

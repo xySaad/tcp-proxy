@@ -12,6 +12,11 @@ var (
 	TUNNEL_REJECTED = []byte("==TUNNEL==REJECTED")
 )
 
-const (
-	MAX_PEER_QUOTA = 5
-)
+var PROTOCOL = [...]byte{'T', 'C', 'P', 'R', 'P'}
+
+const VERSION_MAJOR byte = 0
+const VERSION_MINOR byte = 1
+
+var PREFIX = append(PROTOCOL[:], ' ', VERSION_MAJOR, VERSION_MINOR, '\n')
+
+const MAX_PEER_QUOTA = 5

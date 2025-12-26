@@ -3,7 +3,6 @@ package client
 import (
 	"01proxy/model"
 	"crypto/tls"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -55,16 +54,9 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Bidirectional copy
-	go transfer(targetConn, clientConn)
-	transfer(clientConn, targetConn)
+	model.BiCopy(targetConn, clientConn)
 
 	log.Printf("Connection closed: %s", r.Host)
-}
-
-func transfer(dst io.WriteCloser, src io.ReadCloser) {
-	defer dst.Close()
-	defer src.Close()
-	io.Copy(dst, src)
 }
 
 func Proxy() *net.TCPAddr {

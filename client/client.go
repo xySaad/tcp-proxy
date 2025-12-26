@@ -3,6 +3,7 @@ package client
 import (
 	"01proxy/model"
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
@@ -14,9 +15,8 @@ func PeerHandshake() (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Connected to the remote server")
 
-	_, err = remoteServer.Write(model.PEER_REQUEST)
+	_, err = model.WriteHeader(remoteServer, model.PEER_REQUEST)
 	if err != nil {
 		return nil, err
 	}
@@ -30,21 +30,27 @@ func PeerHandshake() (net.Conn, error) {
 	return remoteServer, nil
 }
 
-func TunnelHandshake() (net.Conn, error) {
+func TunnelHandshakeWithID(id uint64) (net.Conn, error) {
 	remoteServer, err := net.Dial("tcp", "0.0.0.0:1080")
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = remoteServer.Write(model.TUNNEL_REQUEST)
+	_, err = model.WriteHeader(remoteServer, model.TUNNEL_REQUEST)
 	if err != nil {
+		return nil, err
+	}
+
+	idBuf := make([]byte, 8)
+	binary.BigEndian.PutUint64(idBuf, id)
+	if _, err := remoteServer.Write(idBuf); err != nil {
 		return nil, err
 	}
 
 	buffer := make([]byte, len(model.TUNNEL_ACCEPTED))
 	_, err = io.ReadFull(remoteServer, buffer)
 	if err != nil || !bytes.Equal(buffer, model.TUNNEL_ACCEPTED) {
-		return nil, fmt.Errorf("tunnel rejected - %s", err)
+		return nil, fmt.Errorf("tunnel rejected - %s - %s", err, string(buffer))
 	}
 
 	return remoteServer, nil
@@ -53,41 +59,45 @@ func TunnelHandshake() (net.Conn, error) {
 func Client(proxyAdress *net.TCPAddr) {
 	remoteServer, err := PeerHandshake()
 	if err != nil {
-		log.Println(err)
+		log.Printf("[CLIENT] Peer handshake failed: %v", err)
 		return
 	}
+	log.Printf("[CLIENT] Connected to remote server")
 
 	buffer := make([]byte, len(model.START_BRIDGE))
 	for {
 		_, err = io.ReadFull(remoteServer, buffer)
 		if err == io.EOF {
-			log.Fatal("remote server has been stoped", err)
+			log.Printf("[CLIENT] Remote server disconnected")
 			return
 		}
 		if err != nil || !bytes.Equal(buffer, model.START_BRIDGE) {
-			fmt.Println(err, "ignore buffer:", string(buffer))
 			continue
 		}
 
-		log.Println("Bridgging...")
 		localProxy, err := net.DialTCP("tcp", nil, proxyAdress)
 		if err != nil {
-			fmt.Println("bridge rejected - ", err)
 			remoteServer.Write(model.BRIDGE_REJECTED)
 			continue
 		}
 		remoteServer.Write(model.BRIDGE_ACCEPTED)
 
-		log.Println("Bridgging DONE!")
+		idBuf := make([]byte, 8)
+		if _, err := io.ReadFull(remoteServer, idBuf); err != nil {
+			log.Printf("[CLIENT] Failed to read tunnel ID: %v", err)
+			return
+		}
+		id := binary.BigEndian.Uint64(idBuf)
+
 		go func() {
-			tunnel, err := TunnelHandshake()
+			tunnel, err := TunnelHandshakeWithID(id)
 			if err != nil {
-				log.Println(err)
+				log.Printf("[TUNNEL] Handshake failed: %v", err)
 				return
 			}
-			fmt.Println("Connected as tunnel")
+			log.Printf("[TUNNEL] Established connection (ID: %d)", id)
 			model.BiCopy(tunnel, localProxy)
-			log.Println("Tunnel Closed", tunnel.LocalAddr())
+			log.Printf("[TUNNEL] Connection closed (ID: %d)", id)
 		}()
 	}
 }

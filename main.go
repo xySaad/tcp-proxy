@@ -3,7 +3,7 @@ package main
 import (
 	"01proxy/client"
 	"01proxy/server"
-	"fmt"
+	"log"
 	"os"
 )
 
@@ -15,10 +15,10 @@ func main() {
 		}
 		srv, err := server.New(adress)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			return
 		}
-		fmt.Println("Listening", adress)
+		log.Println("Listening", adress)
 		srv.Run()
 	} else {
 		client.Client(client.Proxy())
