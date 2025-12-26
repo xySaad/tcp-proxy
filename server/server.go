@@ -73,8 +73,12 @@ func (s *Server) Run() {
 		case Peer:
 			s.pool.Peers.Add(Peer{Quota: 0, Conn: conn.Conn})
 			log.Println("Peer added", conn.Conn.RemoteAddr(), "- Total:", s.pool.Peers.Size())
-			s.pool.Clients.ForEach(s.handleClient)
-			s.pool.Clients.Clear()
+			go func() {
+				s.pool.Clients.Bulk(func() {
+					s.pool.Clients.ForEach(s.handleClient)
+					s.pool.Clients.Clear()
+				})
+			}()
 		case net.Conn:
 			s.pool.Tunnels <- conn
 			log.Println("Tunnel added", conn.RemoteAddr())

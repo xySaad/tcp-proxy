@@ -2,18 +2,17 @@ package server
 
 import (
 	"01proxy/model"
+	"01proxy/model/mutex"
 	"bytes"
 	"fmt"
 	"io"
 	"net"
-	"sync"
 )
 
 type Peer struct {
-	Quota   int
-	Conn    net.Conn
-	Tunnels map[string]net.Conn
-	mx      sync.Mutex
+	Quota int
+	Conn  net.Conn
+	mx    mutex.Mutex
 }
 
 func (p *Pool) NextPeer() (peer *Peer) {

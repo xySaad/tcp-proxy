@@ -1,13 +1,13 @@
 package model
 
 import (
+	"01proxy/model/mutex"
 	"slices"
-	"sync"
 )
 
 type Pool[T any] struct {
 	value []T
-	sync.Mutex
+	mutex.Mutex
 }
 
 func (p *Pool[T]) Size() int {
