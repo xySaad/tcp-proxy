@@ -1,5 +1,7 @@
 package model
 
+import "fmt"
+
 const (
 	_PEER_REQUEST    = "==PEER==REQUEST"
 	_PEER_ACCEPTED   = "==PEER==ACCEPTED"
@@ -36,11 +38,13 @@ func TUNNEL_REJECTED() []byte {
 	return []byte(_TUNNEL_REJECTED)
 }
 
-var PROTOCOL = [...]byte{'T', 'C', 'P', 'R', 'P'}
-
 const VERSION_MAJOR byte = 0
 const VERSION_MINOR byte = 1
 
-var PREFIX = append(PROTOCOL[:], ' ', VERSION_MAJOR, VERSION_MINOR, '\n')
+var prefix = fmt.Sprintln("TCPRP ", VERSION_MAJOR, VERSION_MINOR)
+
+func PREFIX() []byte {
+	return []byte(prefix)
+}
 
 const MAX_PEER_QUOTA = 5

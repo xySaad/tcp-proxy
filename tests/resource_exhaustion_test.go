@@ -33,7 +33,7 @@ func TestResourceExhaustion(t *testing.T) {
 			}
 
 			// 1. Send Protocol Prefix [cite: 14]
-			conn.Write(model.PREFIX)
+			conn.Write(model.PREFIX())
 
 			// 2. Send maximum uint16 length (65535)
 			// This triggers: commandBuf := make([]byte, length) in ReadCommand

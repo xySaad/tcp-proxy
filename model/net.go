@@ -53,13 +53,13 @@ func ServerListen(s *http.Server) (net.Listener, *net.TCPAddr, error) {
 }
 
 func WriteHeader(conn io.Writer, command []byte) (int, error) {
-	totalLen := len(PREFIX) + 2 + len(command)
+	totalLen := len(PREFIX()) + 2 + len(command)
 
 	buf := make([]byte, totalLen)
 
-	copy(buf[:], PREFIX)
-	binary.BigEndian.PutUint16(buf[len(PREFIX):], uint16(len(command)))
-	copy(buf[len(PREFIX)+2:], command)
+	copy(buf[:], PREFIX())
+	binary.BigEndian.PutUint16(buf[len(PREFIX()):], uint16(len(command)))
+	copy(buf[len(PREFIX())+2:], command)
 	return conn.Write(buf)
 }
 

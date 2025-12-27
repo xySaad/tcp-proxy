@@ -34,7 +34,7 @@ func (c *TimeoutConn) Write(b []byte) (n int, err error) {
 
 func (s *Server) nextConn(conn net.Conn) (any, error) {
 	log.Println("connection accepted", conn.RemoteAddr())
-	buffer, err := model.ReadExact(conn, model.PREFIX)
+	buffer, err := model.ReadExact(conn, model.PREFIX())
 	if err != nil {
 		return nil, err
 	}
