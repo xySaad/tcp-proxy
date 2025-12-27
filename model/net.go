@@ -7,34 +7,35 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"os"
 	"time"
 )
 
-func BiCopy(live net.Conn, killable net.Conn) error {
-	var err1 error
-	go func() {
-		_, err1 = io.Copy(killable, live)
-		live.SetDeadline(time.Time{})
-		if err1 != nil {
-			err1 = fmt.Errorf("Error on copy %s <=> %s: %s", killable.RemoteAddr(), live.RemoteAddr(), err1)
-		}
+type copyResult struct {
+	err      error
+	dst, src net.Conn
+}
 
-		if !os.IsTimeout(err1) {
-			killable.SetDeadline(time.Now())
-		}
+func BiCopy(a, b net.Conn) error {
+	erchan := make(chan copyResult, 2)
+	go func() {
+		_, err := io.Copy(b, a)
+		erchan <- copyResult{err: err, dst: b, src: a}
+		b.SetDeadline(time.Now())
 	}()
 
-	_, err2 := io.Copy(live, killable)
-	killable.SetDeadline(time.Time{})
-	if !os.IsTimeout(err2) {
-		live.SetDeadline(time.Now())
-	} else if err1 != nil {
-		return err1
-	}
+	go func() {
+		_, err := io.Copy(a, b)
+		erchan <- copyResult{err: err, dst: a, src: b}
+		a.SetDeadline(time.Now())
+	}()
 
-	if err2 != nil {
-		return fmt.Errorf("Error on copy %s <=> %s: %s", live.RemoteAddr(), killable.RemoteAddr(), err2)
+	defer a.SetDeadline(time.Time{})
+	defer b.SetDeadline(time.Time{})
+
+	err := <-erchan
+	<-erchan
+	if err.err != nil {
+		return fmt.Errorf("Error on copy %s => %s: %s", err.src.RemoteAddr(), err.dst.RemoteAddr(), err.err)
 	}
 
 	return nil

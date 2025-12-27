@@ -36,6 +36,12 @@ func TunnelHandshakeWithID(id uint64) (net.Conn, error) {
 		return nil, err
 	}
 
+	defer func(err error) {
+		if err != nil {
+			remoteServer.Close()
+		}
+	}(err)
+
 	_, err = model.WriteHeader(remoteServer, model.TUNNEL_REQUEST)
 	if err != nil {
 		return nil, err
@@ -95,6 +101,7 @@ func Client(proxyAdress *net.TCPAddr) {
 				log.Printf("[TUNNEL] Handshake failed: %v", err)
 				return
 			}
+			defer tunnel.Close()
 			log.Printf("[TUNNEL] Established connection (ID: %d)", id)
 			model.BiCopy(tunnel, localProxy)
 			log.Printf("[TUNNEL] Connection closed (ID: %d)", id)

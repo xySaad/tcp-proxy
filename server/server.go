@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"time"
 )
 
 type Pool struct {
@@ -56,11 +57,12 @@ func (s *Server) handleClient(client Client) {
 			return
 		}
 		s.pool.TunnelMap.Delete(id)
+		defer client.Conn.Close()
 		fmt.Printf("writing buffer to client %s: %s\n", client.Conn.RemoteAddr(), string(client.buffer))
 		tunnel.Write(client.buffer)
 		client.buffer = nil
-		fmt.Printf("copying %s <=> %s\n", tunnel.RemoteAddr(), client.Conn.RemoteAddr())
 
+		fmt.Printf("copying %s <=> %s\n", tunnel.RemoteAddr(), client.Conn.RemoteAddr())
 		err := model.BiCopy(tunnel, client.Conn)
 		if err != nil {
 			log.Println(err)
@@ -90,10 +92,12 @@ func (s *Server) Run() {
 			log.Println("ERROR at ln.Accept:", err)
 			continue
 		}
+		timeoutConn := TimeoutConn{Conn: rawConn, Timeout: time.Second * 5}
 
 		go func() {
-			conn, err := s.nextConn(rawConn)
+			conn, err := s.nextConn(&timeoutConn)
 			if err != nil {
+				rawConn.Close()
 				log.Println("Error processing conn header", err)
 				return
 			}

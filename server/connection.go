@@ -7,7 +7,30 @@ import (
 	"io"
 	"log"
 	"net"
+	"time"
 )
+
+type TimeoutConn struct {
+	net.Conn
+	Timeout time.Duration
+}
+
+func (c *TimeoutConn) Read(b []byte) (n int, err error) {
+	err = c.Conn.SetReadDeadline(time.Now().Add(c.Timeout))
+	defer c.Conn.SetReadDeadline(time.Time{})
+	if err != nil {
+		return
+	}
+	return c.Conn.Read(b)
+}
+func (c *TimeoutConn) Write(b []byte) (n int, err error) {
+	err = c.Conn.SetWriteDeadline(time.Now().Add(c.Timeout))
+	defer c.Conn.SetWriteDeadline(time.Time{})
+	if err != nil {
+		return
+	}
+	return c.Conn.Write(b)
+}
 
 func (s *Server) nextConn(conn net.Conn) (any, error) {
 	log.Println("connection accepted", conn.RemoteAddr())
