@@ -70,14 +70,19 @@ func Client(proxyAdress *net.TCPAddr) {
 	}
 	log.Printf("[CLIENT] Connected to remote server")
 
-	buffer := model.START_BRIDGE()
 	for {
-		_, err = io.ReadFull(remoteServer, buffer)
-		if err == io.EOF {
+		command, err := model.ReadCommand(remoteServer)
+		if err != nil {
 			log.Printf("[CLIENT] Remote server disconnected")
-			return
+			break
 		}
-		if err != nil || !bytes.Equal(buffer, model.START_BRIDGE()) {
+
+		if bytes.Equal(command, model.KEEP_ALIVE()) {
+			remoteServer.Write(model.KEEP_ALIVE())
+			continue
+		}
+
+		if !bytes.Equal(command, model.START_BRIDGE()) {
 			continue
 		}
 
@@ -91,7 +96,7 @@ func Client(proxyAdress *net.TCPAddr) {
 		idBuf := make([]byte, 8)
 		if _, err := io.ReadFull(remoteServer, idBuf); err != nil {
 			log.Printf("[CLIENT] Failed to read tunnel ID: %v", err)
-			return
+			break
 		}
 		id := binary.BigEndian.Uint64(idBuf)
 
@@ -107,4 +112,5 @@ func Client(proxyAdress *net.TCPAddr) {
 			log.Printf("[TUNNEL] Connection closed (ID: %d)", id)
 		}()
 	}
+	remoteServer.Close()
 }

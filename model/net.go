@@ -63,6 +63,21 @@ func WriteHeader(conn io.Writer, command []byte) (int, error) {
 	return conn.Write(buf)
 }
 
+func WriteCommand(conn io.Writer, command []byte) error {
+	lenBuf := make([]byte, 2)
+	binary.BigEndian.PutUint16(lenBuf, uint16(len(command)))
+
+	if _, err := conn.Write(lenBuf); err != nil {
+		return fmt.Errorf("failed to write length header: %w", err)
+	}
+
+	if _, err := conn.Write(command); err != nil {
+		return fmt.Errorf("failed to write command body: %w", err)
+	}
+
+	return nil
+}
+
 func ReadCommand(conn io.Reader) ([]byte, error) {
 	lenBuf := make([]byte, 2)
 	if _, err := io.ReadFull(conn, lenBuf); err != nil {

@@ -71,3 +71,10 @@ func (p *Pool[T]) Clear() []T {
 	p.value = nil
 	return items
 }
+
+func (p *Pool[T]) Value() []T {
+	p.Lock()
+	defer p.Unlock()
+
+	return append([]T(nil), p.value...)
+}

@@ -11,8 +11,12 @@ const (
 	_TUNNEL_REQUEST  = "==TUNNEL==REQUEST"
 	_TUNNEL_ACCEPTED = "==TUNNEL==ACCEPTED"
 	_TUNNEL_REJECTED = "==TUNNEL==REJECTED"
+	_KEEP_ALIVE      = "==KEEP==ALIVE"
 )
 
+func KEEP_ALIVE() []byte {
+	return []byte(_KEEP_ALIVE)
+}
 func PEER_REQUEST() []byte {
 	return []byte(_PEER_REQUEST)
 }
@@ -41,7 +45,7 @@ func TUNNEL_REJECTED() []byte {
 const VERSION_MAJOR byte = 0
 const VERSION_MINOR byte = 1
 
-var prefix = fmt.Sprintln("TCPRP ", VERSION_MAJOR, VERSION_MINOR)
+var prefix = fmt.Sprintln("TCPRP", VERSION_MAJOR, VERSION_MINOR)
 
 func PREFIX() []byte {
 	return []byte(prefix)

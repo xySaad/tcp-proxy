@@ -3,10 +3,12 @@ package server
 import (
 	"01proxy/model"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net"
 	"os"
+	"slices"
 	"time"
 )
 
@@ -86,6 +88,7 @@ func (s *Server) handleClient(client Client) {
 }
 
 func (s *Server) Run() {
+	go s.Dispenser()
 	for {
 		rawConn, err := s.ln.Accept()
 		if err != nil {
@@ -111,5 +114,41 @@ func (s *Server) Run() {
 				s.handleClient(conn)
 			}
 		}()
+	}
+}
+
+func (s *Server) Dispenser() {
+	for {
+		<-time.Tick(5 * time.Second)
+		deadPeers := []*Peer{}
+
+		for _, p := range s.pool.Peers.Value() {
+			if !p.Mx.TryLock() {
+				continue
+			}
+
+			err := model.WriteCommand(p.Conn, model.KEEP_ALIVE())
+			if err != nil {
+				deadPeers = append(deadPeers, p)
+				p.Conn.Close()
+				p.Mx.Unlock()
+				continue
+			}
+			_, err = io.ReadFull(p.Conn, model.KEEP_ALIVE())
+			if err != nil {
+				deadPeers = append(deadPeers, p)
+				deadPeers = append(deadPeers, p)
+				p.Conn.Close()
+				p.Mx.Unlock()
+				continue
+			}
+			p.Mx.Unlock()
+		}
+		if len(deadPeers) > 0 {
+			s.pool.Peers.RemoveBy(func(p *Peer) bool {
+				fmt.Println("dead peer removed", p.Conn.RemoteAddr())
+				return slices.Contains(deadPeers, p)
+			})
+		}
 	}
 }

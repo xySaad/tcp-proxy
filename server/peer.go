@@ -38,7 +38,7 @@ func (s *Server) handlePeer(p *Peer) {
 	}
 }
 func (p *Peer) StartBridge(id uint64) error {
-	if _, err := p.Conn.Write(model.START_BRIDGE()); err != nil {
+	if err := model.WriteCommand(p.Conn, model.START_BRIDGE()); err != nil {
 		return err
 	}
 
@@ -57,4 +57,22 @@ func (p *Peer) StartBridge(id uint64) error {
 		return err
 	}
 	return nil
+}
+
+func (p *Peer) KeepAlive() bool {
+	if !p.Mx.TryLock() {
+		return true
+	}
+	defer p.Mx.Unlock()
+
+	if nil != model.WriteCommand(p.Conn, model.KEEP_ALIVE()) {
+		return false
+	}
+
+	_, err := io.ReadFull(p.Conn, model.KEEP_ALIVE())
+	if err != nil {
+		return false
+	}
+
+	return false
 }
