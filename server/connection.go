@@ -47,6 +47,9 @@ func (s *Server) nextConn(conn net.Conn) (any, error) {
 	}
 
 	command, err := model.ReadCommand(conn)
+	if err != nil {
+		return nil, err
+	}
 	if bytes.Equal(command, model.PEER_REQUEST()) {
 		_, err = conn.Write(model.PEER_ACCEPTED())
 		if err != nil {
