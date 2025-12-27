@@ -137,13 +137,13 @@ func (s *Server) Dispenser() {
 			_, err = io.ReadFull(p.Conn, model.KEEP_ALIVE())
 			if err != nil {
 				deadPeers = append(deadPeers, p)
-				deadPeers = append(deadPeers, p)
 				p.Conn.Close()
 				p.Mx.Unlock()
 				continue
 			}
 			p.Mx.Unlock()
 		}
+
 		if len(deadPeers) > 0 {
 			s.pool.Peers.RemoveBy(func(p *Peer) bool {
 				fmt.Println("dead peer removed", p.Conn.RemoteAddr())
