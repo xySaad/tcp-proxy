@@ -47,8 +47,8 @@ func (s *Server) nextConn(conn net.Conn) (any, error) {
 	}
 
 	command, err := model.ReadCommand(conn)
-	if bytes.Equal(command, model.PEER_REQUEST) {
-		_, err = conn.Write(model.PEER_ACCEPTED)
+	if bytes.Equal(command, model.PEER_REQUEST()) {
+		_, err = conn.Write(model.PEER_ACCEPTED())
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +58,7 @@ func (s *Server) nextConn(conn net.Conn) (any, error) {
 		}, nil
 	}
 
-	if bytes.Equal(command, model.TUNNEL_REQUEST) {
+	if bytes.Equal(command, model.TUNNEL_REQUEST()) {
 		log.Println(conn.RemoteAddr(), "connected as tunnel")
 		idBuf := make([]byte, 8)
 		if _, err := io.ReadFull(conn, idBuf); err != nil {

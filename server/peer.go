@@ -38,18 +38,18 @@ func (s *Server) handlePeer(p *Peer) {
 	}
 }
 func (p *Peer) StartBridge(id uint64) error {
-	if _, err := p.Conn.Write(model.START_BRIDGE); err != nil {
+	if _, err := p.Conn.Write(model.START_BRIDGE()); err != nil {
 		return err
 	}
 
-	buffer := make([]byte, len(model.BRIDGE_ACCEPTED))
+	buffer := model.BRIDGE_ACCEPTED()
 	_, err := io.ReadFull(p.Conn, buffer)
 	if err != nil {
 		return err
 	}
 
-	if !bytes.Equal(buffer, model.BRIDGE_ACCEPTED) {
-		return fmt.Errorf("buffer didn't match %s: %s", model.BRIDGE_ACCEPTED, buffer)
+	if !bytes.Equal(buffer, model.BRIDGE_ACCEPTED()) {
+		return fmt.Errorf("buffer didn't match %s: %s", model.BRIDGE_ACCEPTED(), buffer)
 	}
 	idBuf := make([]byte, 8)
 	binary.BigEndian.PutUint64(idBuf, id)

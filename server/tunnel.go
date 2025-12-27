@@ -19,7 +19,7 @@ func (s *Server) handleTunnel(conn Tunnel) {
 		return
 	}
 
-	_, err := conn.Conn.Write(model.TUNNEL_ACCEPTED)
+	_, err := conn.Conn.Write(model.TUNNEL_ACCEPTED())
 	if err != nil {
 		s.pool.TunnelMap.Delete(conn.ID)
 		ch <- nil
