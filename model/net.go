@@ -95,17 +95,22 @@ func ReadCommand(conn io.Reader) ([]byte, error) {
 
 func ReadExact(conn io.Reader, expected []byte) ([]byte, error) {
 	expectedBuf := make([]byte, len(expected))
-	for total := 0; total < len(expectedBuf); {
+
+	total := 0
+	for total < len(expectedBuf) {
 		n, err := conn.Read(expectedBuf[total:])
+		end := total + n
 		if err != nil {
 			return nil, err
 		}
-
-		if !bytes.Equal(expectedBuf[:n], expected[total:]) {
-			return expectedBuf, nil
+		if !bytes.Equal(expectedBuf[total:end], expected[total:end]) {
+			return expectedBuf[total:end], nil
 		}
 		total += n
 	}
+	if total == len(expected) {
+		return nil, nil
+	}
 
-	return nil, nil
+	return expectedBuf, nil
 }
