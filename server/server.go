@@ -85,18 +85,27 @@ func (s *Server) handleClient(client Client) {
 
 func (s *Server) Run() {
 	for {
-		conn, err := s.nextConn()
+		rawConn, err := s.ln.Accept()
 		if err != nil {
+			log.Println("ERROR at ln.Accept:", err)
 			continue
 		}
 
-		switch conn := conn.(type) {
-		case Peer:
-			go s.handlePeer(&conn)
-		case Tunnel:
-			go s.handleTunnel(conn)
-		case Client:
-			go s.handleClient(conn)
-		}
+		go func() {
+			conn, err := s.nextConn(rawConn)
+			if err != nil {
+				log.Println("Error processing conn header", err)
+				return
+			}
+
+			switch conn := conn.(type) {
+			case Peer:
+				s.handlePeer(&conn)
+			case Tunnel:
+				s.handleTunnel(conn)
+			case Client:
+				s.handleClient(conn)
+			}
+		}()
 	}
 }

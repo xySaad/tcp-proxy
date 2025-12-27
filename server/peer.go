@@ -27,17 +27,15 @@ func (p *Pool) NextPeer() (peer *Peer) {
 
 func (s *Server) handlePeer(p *Peer) {
 	s.pool.Peers.Add(p)
-	go func() {
-		clients := s.pool.Clients.Clear()
-		if len(clients) < 1 {
-			return
-		}
+	clients := s.pool.Clients.Clear()
+	if len(clients) < 1 {
+		return
+	}
 
-		fmt.Printf("processing %d queue clients\n", len(clients))
-		for _, c := range clients {
-			go s.handleClient(c)
-		}
-	}()
+	fmt.Printf("processing %d queue clients\n", len(clients))
+	for _, c := range clients {
+		go s.handleClient(c)
+	}
 }
 func (p *Peer) StartBridge(id uint64) error {
 	if _, err := p.Conn.Write(model.START_BRIDGE); err != nil {

@@ -6,13 +6,10 @@ import (
 	"encoding/binary"
 	"io"
 	"log"
+	"net"
 )
 
-func (s *Server) nextConn() (any, error) {
-	conn, err := s.ln.Accept()
-	if err != nil {
-		return nil, err
-	}
+func (s *Server) nextConn(conn net.Conn) (any, error) {
 	log.Println("connection accepted", conn.RemoteAddr())
 	buffer, err := model.ReadExact(conn, model.PREFIX)
 	if err != nil {
