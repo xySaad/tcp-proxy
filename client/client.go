@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"net"
+
+	"github.com/xySaad/snapshot"
 )
 
 func PeerHandshake() (net.Conn, error) {
@@ -15,6 +17,11 @@ func PeerHandshake() (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func(err error) {
+		if err != nil {
+			remoteServer.Close()
+		}
+	}(err)
 
 	_, err = model.WriteHeader(remoteServer, model.PEER_REQUEST())
 	if err != nil {
@@ -62,14 +69,15 @@ func TunnelHandshakeWithID(id uint64) (net.Conn, error) {
 	return remoteServer, nil
 }
 
-func Client(proxyAdress *net.TCPAddr) {
+func Client(proxyAdress *net.TCPAddr, reset *snapshot.Snapshot) {
 	remoteServer, err := PeerHandshake()
 	if err != nil {
 		log.Printf("[CLIENT] Peer handshake failed: %v", err)
 		return
 	}
+	defer remoteServer.Close()
 	log.Printf("[CLIENT] Connected to remote server")
-
+	reset.Reset()
 	for {
 		command, err := model.ReadCommand(remoteServer)
 		if err != nil {
@@ -112,5 +120,4 @@ func Client(proxyAdress *net.TCPAddr) {
 			log.Printf("[TUNNEL] Connection closed (ID: %d)", id)
 		}()
 	}
-	remoteServer.Close()
 }
