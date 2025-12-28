@@ -29,11 +29,17 @@ func (p *Pool[T]) Add(item T) {
 	p.value = append(p.value, item)
 }
 
-func (p *Pool[T]) Pop() {
+func (p *Pool[T]) Pop() (T, bool) {
 	p.Lock()
 	defer p.Unlock()
+	if len(p.value) < 1 {
+		var t T
+		return t, false
+	}
+	last := p.value[0]
 
-	p.value = p.value[:len(p.value)-1]
+	p.value = p.value[1:]
+	return last, true
 }
 
 func (p *Pool[T]) Find(callback func(T) bool) T {

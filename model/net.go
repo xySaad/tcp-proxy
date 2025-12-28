@@ -31,7 +31,8 @@ func BiCopy(a, b net.Conn) error {
 
 	defer a.SetDeadline(time.Time{})
 	defer b.SetDeadline(time.Time{})
-
+	defer a.Close()
+	defer b.Close()
 	err := <-erchan
 	<-erchan
 	if err.err != nil {

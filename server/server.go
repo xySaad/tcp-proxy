@@ -2,7 +2,6 @@ package server
 
 import (
 	"01proxy/model"
-	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -40,19 +39,30 @@ func New(adress string) (*Server, error) {
 }
 
 func (s *Server) handleClient(client Client) {
-	peer := s.pool.NextPeer()
+	peer := s.pool.LockedNextPeer()
 	if peer == nil {
 		s.pool.Clients.Add(client)
 		return
 	}
 	log.Println("using peer", peer.Conn.RemoteAddr())
-	peer.Mx.Lock()
-	defer peer.Mx.Unlock()
+	defer func() {
+		peer.Mx.Unlock()
+	}()
 
 	var id uint64 = uint64(rand.Int63())
 	ch := make(chan net.Conn)
 	s.pool.TunnelMap.Set(id, ch)
 	go func() {
+		defer func() {
+			peer.Mx.Lock()
+			peer.Quota--
+			peer.Mx.Unlock()
+			if waitingClient, ok := s.pool.Clients.Pop(); ok {
+				log.Println("Quota freed, handling queued client")
+				go s.handleClient(waitingClient)
+			}
+		}()
+
 		tunnel := <-ch
 		if tunnel == nil {
 			log.Println("tunnel with id", id, "is null")
@@ -60,17 +70,17 @@ func (s *Server) handleClient(client Client) {
 		}
 		s.pool.TunnelMap.Delete(id)
 		defer client.Conn.Close()
-		fmt.Printf("writing buffer to client %s: %s\n", client.Conn.RemoteAddr(), string(client.buffer))
+		log.Printf("writing buffer to client %s: %s\n", client.Conn.RemoteAddr(), string(client.buffer))
 		tunnel.Write(client.buffer)
 		client.buffer = nil
 
-		fmt.Printf("copying %s <=> %s\n", tunnel.RemoteAddr(), client.Conn.RemoteAddr())
+		log.Printf("copying %s <=> %s\n", tunnel.RemoteAddr(), client.Conn.RemoteAddr())
 		err := model.BiCopy(tunnel, client.Conn)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		fmt.Printf("Successfully Copied %s <=> %s\n", tunnel.RemoteAddr(), client.Conn.RemoteAddr())
+		log.Printf("Successfully Copied %s <=> %s\n", tunnel.RemoteAddr(), client.Conn.RemoteAddr())
 	}()
 
 	err := peer.StartBridge(id)
@@ -146,7 +156,7 @@ func (s *Server) Dispenser() {
 
 		if len(deadPeers) > 0 {
 			s.pool.Peers.RemoveBy(func(p *Peer) bool {
-				fmt.Println("dead peer removed", p.Conn.RemoteAddr())
+				log.Println("dead peer removed", p.Conn.RemoteAddr())
 				return slices.Contains(deadPeers, p)
 			})
 		}

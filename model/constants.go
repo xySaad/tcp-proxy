@@ -51,4 +51,4 @@ func PREFIX() []byte {
 	return []byte(prefix)
 }
 
-const MAX_PEER_QUOTA = 5
+const MAX_PEER_QUOTA = 10

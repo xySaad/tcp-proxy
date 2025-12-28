@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 	"net"
 )
 
@@ -16,11 +17,18 @@ type Peer struct {
 	Mx    mutex.Mutex
 }
 
-func (p *Pool) NextPeer() (peer *Peer) {
-	return p.Peers.Find(func(p *Peer) bool {
+func (pool *Pool) LockedNextPeer() *Peer {
+	return pool.Peers.Find(func(p *Peer) bool {
+		if !p.Mx.TryLock() {
+			return false
+		}
+
 		if p.Quota < model.MAX_PEER_QUOTA {
+			p.Quota++
 			return true
 		}
+
+		p.Mx.Unlock()
 		return false
 	})
 }
@@ -32,7 +40,7 @@ func (s *Server) handlePeer(p *Peer) {
 		return
 	}
 
-	fmt.Printf("processing %d queue clients\n", len(clients))
+	log.Printf("processing %d queue clients\n", len(clients))
 	for _, c := range clients {
 		go s.handleClient(c)
 	}
