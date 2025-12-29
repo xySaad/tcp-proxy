@@ -2,6 +2,7 @@ package main
 
 import (
 	"01proxy/model"
+	"01proxy/model/constants"
 	"bytes"
 	"log"
 	"net"
@@ -21,8 +22,8 @@ func getCommand(command []byte) []byte {
 
 func TestReadExact(t *testing.T) {
 	tests := [][][]byte{
-		{model.PREFIX()}, // valid prefix but invalid command; should result in error while parsing command
-		{model.PREFIX()[:5], model.PREFIX()[5:], getCommand(model.PEER_REQUEST())}, // valid peer; should connect as peer normally
+		{constants.PREFIX()}, // valid prefix but invalid command; should result in error while parsing command
+		{constants.PREFIX()[:5], constants.PREFIX()[5:], getCommand(constants.PEER_REQUEST())}, // valid peer; should connect as peer normally
 		{[]byte("no idea")}} // connect as client
 
 	for _, test := range tests {

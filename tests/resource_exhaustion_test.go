@@ -1,7 +1,7 @@
 package main
 
 import (
-	"01proxy/model"
+	"01proxy/model/constants"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -33,7 +33,7 @@ func TestResourceExhaustion(t *testing.T) {
 			}
 
 			// 1. Send Protocol Prefix [cite: 14]
-			conn.Write(model.PREFIX())
+			conn.Write(constants.PREFIX())
 
 			// 2. Send maximum uint16 length (65535)
 			// This triggers: commandBuf := make([]byte, length) in ReadCommand

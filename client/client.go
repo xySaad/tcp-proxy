@@ -2,6 +2,7 @@ package client
 
 import (
 	"01proxy/model"
+	"01proxy/model/constants"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -23,14 +24,14 @@ func PeerHandshake() (net.Conn, error) {
 		}
 	}(err)
 
-	_, err = model.WriteHeader(remoteServer, model.PEER_REQUEST())
+	_, err = model.WriteHeader(remoteServer, constants.PEER_REQUEST())
 	if err != nil {
 		return nil, err
 	}
 
-	buffer := model.PEER_ACCEPTED()
+	buffer := constants.PEER_ACCEPTED()
 	_, err = io.ReadFull(remoteServer, buffer)
-	if err != nil || !bytes.Equal(buffer, model.PEER_ACCEPTED()) {
+	if err != nil || !bytes.Equal(buffer, constants.PEER_ACCEPTED()) {
 		return nil, fmt.Errorf("server proxy rejected - %s", err)
 	}
 
@@ -49,7 +50,7 @@ func TunnelHandshakeWithID(id uint64) (net.Conn, error) {
 		}
 	}(err)
 
-	_, err = model.WriteHeader(remoteServer, model.TUNNEL_REQUEST())
+	_, err = model.WriteHeader(remoteServer, constants.TUNNEL_REQUEST())
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +61,9 @@ func TunnelHandshakeWithID(id uint64) (net.Conn, error) {
 		return nil, err
 	}
 
-	buffer := model.TUNNEL_ACCEPTED()
+	buffer := constants.TUNNEL_ACCEPTED()
 	_, err = io.ReadFull(remoteServer, buffer)
-	if err != nil || !bytes.Equal(buffer, model.TUNNEL_ACCEPTED()) {
+	if err != nil || !bytes.Equal(buffer, constants.TUNNEL_ACCEPTED()) {
 		return nil, fmt.Errorf("tunnel rejected - %s - %s", err, string(buffer))
 	}
 
@@ -85,21 +86,21 @@ func Client(proxyAdress *net.TCPAddr, reset *snapshot.Snapshot) {
 			break
 		}
 
-		if bytes.Equal(command, model.KEEP_ALIVE()) {
-			remoteServer.Write(model.KEEP_ALIVE())
+		if bytes.Equal(command, constants.KEEP_ALIVE()) {
+			remoteServer.Write(constants.KEEP_ALIVE())
 			continue
 		}
 
-		if !bytes.Equal(command, model.START_BRIDGE()) {
+		if !bytes.Equal(command, constants.START_BRIDGE()) {
 			continue
 		}
 
 		localProxy, err := net.DialTCP("tcp", nil, proxyAdress)
 		if err != nil {
-			remoteServer.Write(model.BRIDGE_REJECTED())
+			remoteServer.Write(constants.BRIDGE_REJECTED())
 			continue
 		}
-		remoteServer.Write(model.BRIDGE_ACCEPTED())
+		remoteServer.Write(constants.BRIDGE_ACCEPTED())
 
 		idBuf := make([]byte, 8)
 		if _, err := io.ReadFull(remoteServer, idBuf); err != nil {

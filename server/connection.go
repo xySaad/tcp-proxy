@@ -2,6 +2,7 @@ package server
 
 import (
 	"01proxy/model"
+	"01proxy/model/constants"
 	"bytes"
 	"encoding/binary"
 	"io"
@@ -34,7 +35,7 @@ func (c *TimeoutConn) Write(b []byte) (n int, err error) {
 
 func (s *Server) nextConn(conn net.Conn) (any, error) {
 	log.Println("connection accepted", conn.RemoteAddr())
-	buffer, err := model.ReadExact(conn, model.PREFIX())
+	buffer, err := model.ReadExact(conn, constants.PREFIX())
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +51,8 @@ func (s *Server) nextConn(conn net.Conn) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if bytes.Equal(command, model.PEER_REQUEST()) {
-		_, err = conn.Write(model.PEER_ACCEPTED())
+	if bytes.Equal(command, constants.PEER_REQUEST()) {
+		_, err = conn.Write(constants.PEER_ACCEPTED())
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +62,7 @@ func (s *Server) nextConn(conn net.Conn) (any, error) {
 		}, nil
 	}
 
-	if bytes.Equal(command, model.TUNNEL_REQUEST()) {
+	if bytes.Equal(command, constants.TUNNEL_REQUEST()) {
 		log.Println(conn.RemoteAddr(), "connected as tunnel")
 		idBuf := make([]byte, 8)
 		if _, err := io.ReadFull(conn, idBuf); err != nil {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"01proxy/model"
+	"01proxy/model/constants"
 	"io"
 	"log"
 	"math/rand"
@@ -137,14 +138,14 @@ func (s *Server) Dispenser() {
 				continue
 			}
 
-			err := model.WriteCommand(p.Conn, model.KEEP_ALIVE())
+			err := model.WriteCommand(p.Conn, constants.KEEP_ALIVE())
 			if err != nil {
 				deadPeers = append(deadPeers, p)
 				p.Conn.Close()
 				p.Mx.Unlock()
 				continue
 			}
-			_, err = io.ReadFull(p.Conn, model.KEEP_ALIVE())
+			_, err = io.ReadFull(p.Conn, constants.KEEP_ALIVE())
 			if err != nil {
 				deadPeers = append(deadPeers, p)
 				p.Conn.Close()

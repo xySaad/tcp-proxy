@@ -1,18 +1,4 @@
-package model
-
-import "fmt"
-
-const (
-	_PEER_REQUEST    = "==PEER==REQUEST"
-	_PEER_ACCEPTED   = "==PEER==ACCEPTED"
-	_START_BRIDGE    = "==START==BRIDGE"
-	_BRIDGE_REJECTED = "==BRIDGE==REJECTED"
-	_BRIDGE_ACCEPTED = "==BRIDGE==ACCEPTED"
-	_TUNNEL_REQUEST  = "==TUNNEL==REQUEST"
-	_TUNNEL_ACCEPTED = "==TUNNEL==ACCEPTED"
-	_TUNNEL_REJECTED = "==TUNNEL==REJECTED"
-	_KEEP_ALIVE      = "==KEEP==ALIVE"
-)
+package constants
 
 func KEEP_ALIVE() []byte {
 	return []byte(_KEEP_ALIVE)
@@ -42,13 +28,6 @@ func TUNNEL_REJECTED() []byte {
 	return []byte(_TUNNEL_REJECTED)
 }
 
-const VERSION_MAJOR byte = 0
-const VERSION_MINOR byte = 1
-
-var prefix = fmt.Sprintln("TCPRP", VERSION_MAJOR, VERSION_MINOR)
-
 func PREFIX() []byte {
 	return []byte(prefix)
 }
-
-const MAX_PEER_QUOTA = 10

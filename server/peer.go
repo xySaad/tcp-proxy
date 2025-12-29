@@ -2,6 +2,7 @@ package server
 
 import (
 	"01proxy/model"
+	"01proxy/model/constants"
 	"01proxy/model/mutex"
 	"bytes"
 	"encoding/binary"
@@ -23,7 +24,7 @@ func (pool *Pool) LockedNextPeer() *Peer {
 			return false
 		}
 
-		if p.Quota < model.MAX_PEER_QUOTA {
+		if p.Quota < constants.MAX_PEER_QUOTA {
 			p.Quota++
 			return true
 		}
@@ -46,18 +47,18 @@ func (s *Server) handlePeer(p *Peer) {
 	}
 }
 func (p *Peer) StartBridge(id uint64) error {
-	if err := model.WriteCommand(p.Conn, model.START_BRIDGE()); err != nil {
+	if err := model.WriteCommand(p.Conn, constants.START_BRIDGE()); err != nil {
 		return err
 	}
 
-	buffer := model.BRIDGE_ACCEPTED()
+	buffer := constants.BRIDGE_ACCEPTED()
 	_, err := io.ReadFull(p.Conn, buffer)
 	if err != nil {
 		return err
 	}
 
-	if !bytes.Equal(buffer, model.BRIDGE_ACCEPTED()) {
-		return fmt.Errorf("buffer didn't match %s: %s", model.BRIDGE_ACCEPTED(), buffer)
+	if !bytes.Equal(buffer, constants.BRIDGE_ACCEPTED()) {
+		return fmt.Errorf("buffer didn't match %s: %s", constants.BRIDGE_ACCEPTED(), buffer)
 	}
 	idBuf := make([]byte, 8)
 	binary.BigEndian.PutUint64(idBuf, id)
@@ -73,11 +74,11 @@ func (p *Peer) KeepAlive() bool {
 	}
 	defer p.Mx.Unlock()
 
-	if nil != model.WriteCommand(p.Conn, model.KEEP_ALIVE()) {
+	if nil != model.WriteCommand(p.Conn, constants.KEEP_ALIVE()) {
 		return false
 	}
 
-	_, err := io.ReadFull(p.Conn, model.KEEP_ALIVE())
+	_, err := io.ReadFull(p.Conn, constants.KEEP_ALIVE())
 	if err != nil {
 		return false
 	}

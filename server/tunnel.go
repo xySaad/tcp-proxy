@@ -1,7 +1,7 @@
 package server
 
 import (
-	"01proxy/model"
+	"01proxy/model/constants"
 	"log"
 	"net"
 )
@@ -19,7 +19,7 @@ func (s *Server) handleTunnel(conn Tunnel) {
 		return
 	}
 
-	_, err := conn.Conn.Write(model.TUNNEL_ACCEPTED())
+	_, err := conn.Conn.Write(constants.TUNNEL_ACCEPTED())
 	if err != nil {
 		s.pool.TunnelMap.Delete(conn.ID)
 		ch <- nil
