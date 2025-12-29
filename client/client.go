@@ -13,8 +13,8 @@ import (
 	"github.com/xySaad/snapshot"
 )
 
-func PeerHandshake() (net.Conn, error) {
-	remoteServer, err := net.Dial("tcp", "0.0.0.0:1080")
+func PeerHandshake(address string) (net.Conn, error) {
+	remoteServer, err := net.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}
@@ -32,14 +32,14 @@ func PeerHandshake() (net.Conn, error) {
 	buffer := constants.PEER_ACCEPTED()
 	_, err = io.ReadFull(remoteServer, buffer)
 	if err != nil || !bytes.Equal(buffer, constants.PEER_ACCEPTED()) {
-		return nil, fmt.Errorf("server proxy rejected - %s", err)
+		return nil, fmt.Errorf("server proxy rejected - %v", err)
 	}
 
 	return remoteServer, nil
 }
 
-func TunnelHandshakeWithID(id uint64) (net.Conn, error) {
-	remoteServer, err := net.Dial("tcp", "0.0.0.0:1080")
+func TunnelHandshakeWithID(address string, id uint64) (net.Conn, error) {
+	remoteServer, err := net.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +70,8 @@ func TunnelHandshakeWithID(id uint64) (net.Conn, error) {
 	return remoteServer, nil
 }
 
-func Client(proxyAdress *net.TCPAddr, reset *snapshot.Snapshot) {
-	remoteServer, err := PeerHandshake()
+func Client(address string, proxyaddress *net.TCPAddr, reset *snapshot.Snapshot) {
+	remoteServer, err := PeerHandshake(address)
 	if err != nil {
 		log.Printf("[CLIENT] Peer handshake failed: %v", err)
 		return
@@ -95,7 +95,7 @@ func Client(proxyAdress *net.TCPAddr, reset *snapshot.Snapshot) {
 			continue
 		}
 
-		localProxy, err := net.DialTCP("tcp", nil, proxyAdress)
+		localProxy, err := net.DialTCP("tcp", nil, proxyaddress)
 		if err != nil {
 			remoteServer.Write(constants.BRIDGE_REJECTED())
 			continue
@@ -110,7 +110,7 @@ func Client(proxyAdress *net.TCPAddr, reset *snapshot.Snapshot) {
 		id := binary.BigEndian.Uint64(idBuf)
 
 		go func() {
-			tunnel, err := TunnelHandshakeWithID(id)
+			tunnel, err := TunnelHandshakeWithID(address, id)
 			if err != nil {
 				log.Printf("[TUNNEL] Handshake failed: %v", err)
 				return
